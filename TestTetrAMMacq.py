@@ -25,15 +25,23 @@ s.send(b'VER:?\r')
 data = s.recv(1024)
 print(data)
 
+s.send(b'RNG:0\r')
+data = s.recv(1024)
+print(data)
+
+s.send(b'CHN:4\r')
+data = s.recv(1024)
+print(data)
+
 s.send(b'ASCII:OFF\r')
 data = s.recv(1024)
 print(data)
 
-s.send(b'TRG:OFF\r')
+s.send(b'NRSAMP:100\r')
 data = s.recv(1024)
 print(data)
 
-s.send(b'NRSAMP:5\r')
+s.send(b'TRG:OFF\r')
 data = s.recv(1024)
 print(data)
 
