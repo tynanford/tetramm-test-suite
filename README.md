@@ -6,6 +6,11 @@ TetrAMM Test Suite
 Collection of tests for TetrAMM picoammeter.
 
 
+TestTetrAMMacq.py
+-----------------
+Tests free-running acquisiton at 20 kSPS.
+
+
 TestTetrAMMtrigger.py
 ---------------------
 
