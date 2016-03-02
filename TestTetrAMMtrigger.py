@@ -20,7 +20,7 @@ USE_TEKTRONIX = True
 TEKTRONIX_IP = '192.168.1.161'
 
 # Private parameters
-_TETRAMM_MIN_VER = '2.9.00'
+_TETRAMM_MIN_VER = '2.9.08'
 
 
 class TestTetrAMMtrigger(unittest.TestCase):
@@ -90,6 +90,9 @@ class TestTetrAMMtrigger(unittest.TestCase):
         resp = self._tetramm_command('TRG:ON\r', log)
         self.assertEqual(resp, 'ACK')
 
+        resp = self._tetramm_command('NTRG:1\r', log)
+        self.assertEqual(resp, 'ACK')
+
         self.trg_gen.set_pulse(10, 1e-6)  # not imporant in this mode
         self.trg_gen.set_output_enable(True)
 
@@ -118,13 +121,13 @@ class TestTetrAMMtrigger(unittest.TestCase):
         for xi in eols_str[1:-2]:
             self.assertEqual(xi, 'D')
 
-        # XXX: this will be removed in future versions
-        self.assertEqual(self.sock.recv(5), b'ACK\r\n')
+        self.assertEqual(self.sock.recv(40), b'\xff\xf4\x00\x03\xff\xff\xff\xff'*5)
 
         resp = self._tetramm_command('TRG:OFF\r', log)
         self.assertEqual(resp, 'ACK')
-        
-        # XXX: here ACQ:OFF will be added in future versions
+
+        resp = self._tetramm_command('ACQ:OFF\r', log)
+        self.assertEqual(resp, 'ACK')
 
         self.trg_gen.set_output_enable(False)
 
@@ -145,6 +148,9 @@ class TestTetrAMMtrigger(unittest.TestCase):
         self.assertEqual(resp, 'ACK')
 
         resp = self._tetramm_command('TRG:ON\r', log)
+        self.assertEqual(resp, 'ACK')
+
+        resp = self._tetramm_command('NTRG:1\r', log)
         self.assertEqual(resp, 'ACK')
 
         self.trg_gen.set_pulse(1, gate_time)
@@ -181,6 +187,8 @@ class TestTetrAMMtrigger(unittest.TestCase):
         for xi in eols_str[1:-2]:
             self.assertEqual(xi, 'D')
 
+        self.assertEqual(self.sock.recv(40), b'\xff\xf4\x00\x03\xff\xff\xff\xff'*5)
+
         self.sock.send(b'ACQ:OFF\r')
         log.debug('< ACQ:OFF')
 
@@ -190,8 +198,7 @@ class TestTetrAMMtrigger(unittest.TestCase):
             log.debug('data: {0}'.format(data))
 
             if data == b'ACK\r\n':
-                break;
-   
+                break
 
         resp = self._tetramm_command('TRG:OFF\r', log)
         self.assertEqual(resp, 'ACK')
@@ -204,12 +211,11 @@ class TestTetrAMMtrigger(unittest.TestCase):
             for nrsamp in [5, 10, 20]:
                 self._test_single_gate(nrsamp, gate_time)
                 time.sleep(0.1)
-                
-                
+
     def _test_continous_gate(self, gate_time):
-        nrsamp = 100
+        nrsamp = 10
         nr_triggers = 100
-        
+
         log = logging.getLogger('TestTetrAMMtrigger.test_continous_gate')
 
         resp = self._tetramm_command('CHN:4\r', log)
@@ -228,6 +234,9 @@ class TestTetrAMMtrigger(unittest.TestCase):
         resp = self._tetramm_command('TRG:ON\r', log)
         self.assertEqual(resp, 'ACK')
 
+        resp = self._tetramm_command('NTRG:{0}\r'.format(nr_triggers), log)
+        self.assertEqual(resp, 'ACK')
+
         self.trg_gen.set_pulse(10, gate_time)
         self.trg_gen.set_output_enable(True)
 
@@ -244,7 +253,7 @@ class TestTetrAMMtrigger(unittest.TestCase):
                 tmp = self.sock.recv(40, socket.MSG_WAITALL)
                 nr_eols += 1
                 buf += tmp
-    
+
                 end_line = tmp[32:40]
                 if end_line == b'\xff\xf4\x00\x00\xff\xff\xff\xff':
                     eols_str += 'S'
@@ -263,6 +272,8 @@ class TestTetrAMMtrigger(unittest.TestCase):
             for xi in eols_str[1:-2]:
                 self.assertEqual(xi, 'D')
 
+        self.assertEqual(self.sock.recv(40), b'\xff\xf4\x00\x03\xff\xff\xff\xff'*5)
+
         self.sock.send(b'ACQ:OFF\r')
         log.debug('< ACQ:OFF')
 
@@ -272,8 +283,7 @@ class TestTetrAMMtrigger(unittest.TestCase):
             log.debug('data: {0}'.format(data))
 
             if data == b'ACK\r\n':
-                break;
-   
+                break
 
         resp = self._tetramm_command('TRG:OFF\r', log)
         self.assertEqual(resp, 'ACK')
@@ -281,7 +291,7 @@ class TestTetrAMMtrigger(unittest.TestCase):
         self.trg_gen.set_output_enable(False)
 
     def test_continous_gate(self):
-        for gate_time in [gate_ms/1e4 for gate_ms in range(998, 1002)]:
+        for gate_time in [gate_ms/1e5 for gate_ms in range(998, 1002)]:
             self._test_continous_gate(gate_time)
             time.sleep(1)
 
